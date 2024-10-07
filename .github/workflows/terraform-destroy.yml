@@ -1,0 +1,50 @@
+name: Terraform Destroy AWS Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      customer_path:
+        description: 'Path of the Terraform code for the customer'
+        required: true
+        default: './terraform'
+      confirm_destroy:
+        description: 'Confirm Terraform Destroy (true/false)'
+        required: true
+        default: 'false'
+
+jobs:
+  terraform-destroy:
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VERSION: '1.5.3'    # Specify the Terraform version
+      AWS_REGION: us-east-1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Initialize Terraform
+        working-directory: ${{ github.event.inputs.customer_path }}
+        run: terraform init
+
+      - name: Plan Terraform Destroy
+        working-directory: ${{ github.event.inputs.customer_path }}
+        run: terraform plan -destroy
+
+      - name: Destroy Terraform Infrastructure (Conditional destroy)
+        if: ${{ github.event.inputs.confirm_destroy == 'true' }}
+        working-directory: ${{ github.event.inputs.customer_path }}
+        run: terraform destroy -auto-approve
