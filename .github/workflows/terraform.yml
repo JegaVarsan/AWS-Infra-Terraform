@@ -1,0 +1,44 @@
+name: Terraform AWS Infrastructure Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      customer_path:
+        description: 'Path of the Terraform code for the customer'
+        required: true
+        default: './terraform'
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VERSION: '1.5.3'    # Specify the Terraform version
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Initialize Terraform
+        working-directory: ${{ github.event.inputs.customer_path }}
+        run: terraform init
+
+      - name: Plan Terraform
+        working-directory: ${{ github.event.inputs.customer_path }}
+        run: terraform plan
+
+      - name: Apply Terraform (Manual approval needed)
+        if: github.event.inputs.auto_apply == 'true'
+        working-directory: ${{ github.event.inputs.customer_path }}
+        run: terraform apply -auto-approve
