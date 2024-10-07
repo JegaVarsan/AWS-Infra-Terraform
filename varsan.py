@@ -3,7 +3,7 @@
 import json
 
 # Path to your plan output JSON file
-json_file_path = 'new.json'
+json_file_path = './terraform/varsan.json'
 
 # Load the JSON data
 with open(json_file_path, 'r') as f:
